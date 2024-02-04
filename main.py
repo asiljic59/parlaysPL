@@ -12,7 +12,9 @@ from sklearn.preprocessing import StandardScaler, PolynomialFeatures
 
 import final_dataset
 from helpers import *
-def check_regressions(x,y):
+
+
+def check_regressions(x, y):
     # missing values are MatchRating,HomeWin%,AwayWin%,Draw%
     '''
     data['MatchRating'] = data['MatchRating'].interpolate(method='spline', order=3, limit_direction='both')
@@ -22,34 +24,30 @@ def check_regressions(x,y):
     '''
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
 
-
     # rf_regressor = RandomForestRegressor(n_estimators=100,)
     # Lasso Regression
     lasso_model = Lasso(alpha=0.5)
     lasso_model.fit(x_train, y_train)
-    #check_for_outliers(x_train)
-    #lasso_assumptions = are_assumptions_satisfied(lasso_model,x_train,y_train)
-
-
+    # check_for_outliers(x_train)
+    # lasso_assumptions = are_assumptions_satisfied(lasso_model,x_train,y_train)
 
     y_pred = lasso_model.predict(x_test)
 
     # Calculate R^2 score
-    r2 = get_rsquared(lasso_model,x_test,y_test)
+    r2 = get_rsquared(lasso_model, x_test, y_test)
     print(f"Lasso r2 :{r2}")
 
     # RIDGE MODEL TEST
     ridge_model = Ridge(alpha=0.5)
-    ridge_model.fit(x_train,y_train)
-    r2_ridge = get_rsquared(ridge_model,x_test,y_test)
+    ridge_model.fit(x_train, y_train)
+    r2_ridge = get_rsquared(ridge_model, x_test, y_test)
     print(f"Ridge r2 :{r2_ridge}")
 
-    #ELASTIC MODEL TEST
+    # ELASTIC MODEL TEST
     elastic_net_model = ElasticNet(alpha=0.5)
-    elastic_net_model.fit(x_train,y_train)
-    r2_elastic_net = get_rsquared(elastic_net_model,x_test,y_test)
+    elastic_net_model.fit(x_train, y_train)
+    r2_elastic_net = get_rsquared(elastic_net_model, x_test, y_test)
     print(f"Elastic net r2 :{r2_elastic_net}")
-
 
     '''
     
@@ -78,81 +76,87 @@ def check_regressions(x,y):
 
     print(f"Elastic net r2 :{r2_robust}")
     """
-def check_poynomial(x,y):
+
+
+def check_poynomial(x, y):
     # Specify the degree of the polynomial
-    degree = 2 # You can adjust this based on your data
+    degree = 2  # You can adjust this based on your data
     # Transform the input data to include polynomial features
     poly_features = PolynomialFeatures(degree=degree)
     x_poly = poly_features.fit_transform(x)
 
+    check_regressions(x_poly, y)
 
-    check_regressions(x_poly,y)
 
 if __name__ == '__main__':
     filename = 'data/final_data.csv'
     data = pd.read_csv(filename)
 
-
-    x = data['MatchRating'].values.reshape(-1,1)
+    x = data['MatchRating'].values.reshape(-1, 1)
     y_home = data['HomeWin%']
     y_draw = data['Draw%']
     y_away = data['AwayWin%']
 
-    #HOME PRECENTAGE
-    check_regressions(x,y_home)
+    # HOME PRECENTAGE
+    check_regressions(x, y_home)
 
-    #DRAW PRECENTAGE
-    check_regressions(x,y_draw)
-    check_poynomial(x,y_draw)
+    # DRAW PRECENTAGE
+    check_regressions(x, y_draw)
+    check_poynomial(x, y_draw)
 
-    #AWAY PRECENTAGE
-    check_regressions(x,y_away)
+    # AWAY PRECENTAGE
+    check_regressions(x, y_away)
 
-    final_data = pd.DataFrame(columns=['HomeTeam','AwayTeam', 'HomeWin%',
+    final_data = pd.DataFrame(columns=['HomeTeam', 'AwayTeam', 'HomeWin%',
                                        'Draw%', 'AwayWin%'])
-    X = data['MatchRating'].values.reshape(-1,1)
-    Y = data.drop(columns = ['MatchRating'])
-    final_model_home = Lasso(alpha=0.1) #0.72
-    final_model_home.fit(x,y_home)
-    final_model_away = Lasso(alpha=0.1) #~0.15
-    final_model_away.fit(x,y_away)
-    final_model_draw = Lasso(alpha=0.1) #0.52
-    final_model_draw.fit(x,y_draw)
+    X = data['MatchRating'].values.reshape(-1, 1)
+    Y = data.drop(columns=['MatchRating'])
+    final_model_home = Lasso(alpha=0.1)  # 0.72
+    final_model_home.fit(x, y_home)
+    final_model_away = Lasso(alpha=0.1)  # ~0.15
+    final_model_away.fit(x, y_away)
+    final_model_draw = Lasso(alpha=0.1)  # 0.52
+    final_model_draw.fit(x, y_draw)
 
     current_season = pd.read_csv('data/2023-24.csv')
     current_teams = current_season['Home Team']
     current_teams = current_teams.drop_duplicates()
     all_teams = current_teams.values.tolist()
 
+    predictions_home = pd.DataFrame(final_model_home.predict(x), columns=['HomeWins%'])
+    predictions_away = pd.DataFrame(final_model_away.predict(x), columns=['AwayWins%'])
+    predictions_draw = pd.DataFrame(final_model_draw.predict(x), columns=['Draws%'])
 
-    predictions_home = pd.DataFrame(final_model_home.predict(x))
-    predictions_away = pd.DataFrame(final_model_away.predict(x))
-    predictions_draw = pd.DataFrame(final_model_draw.predict(x))
+    ratings = data.drop(columns=['NumofHomeWins', 'NumofDraws', 'NumofAwayWins', 'HomeWin%', 'Draw%', 'AwayWin%'])
+    ratings = pd.concat([ratings, predictions_home], axis=1)
+    ratings = pd.concat([ratings, predictions_away], axis=1)
+    ratings = pd.concat([ratings, predictions_draw], axis=1)
 
-    #predictions_home = predictions_home.T
-    #predictions_away = predictions_away.T
-    #predictions_draw = predictions_draw.T
-
-    final_data.reset_index(drop=True,inplace=True)
-    for index,row in current_season.iterrows():
+    final_data.reset_index(drop=True, inplace=True)
+    for index, row in current_season.iterrows():
         if row['Round Number'] == 6:
             pass
         home_team = row['Home Team']
         away_team = row['Away Team']
-        home_gd = final_dataset.get_goal_difference(home_team,row['Round Number'],current_season)
-        away_gd = final_dataset.get_goal_difference(away_team,row['Round Number'],current_season)
+        home_gd = final_dataset.get_goal_difference(home_team, row['Round Number'], current_season)
+        away_gd = final_dataset.get_goal_difference(away_team, row['Round Number'], current_season)
+        if home_gd == None and away_gd == None:
+            print("hallo")
         goal_difference = home_gd - away_gd
+        home_win = (ratings[ratings['MatchRating'] == goal_difference]['HomeWins%']).values[0]
+        away_win = ratings[ratings['MatchRating'] == goal_difference]['AwayWins%'].values[0]
+        draw = ratings[ratings['MatchRating'] == goal_difference]['Draws%'].values[0]
+        new_row =  {
+            'HomeTeam': home_team,
+            'AwayTeam': away_team,
+            'HomeWin%': home_win,
+            'AwayWin%': away_win,
+            'Draw%': draw
+        }
+        final_data.loc[len(final_data)] = new_row
+    final_data.to_csv("C://Users//Aleksa//Desktop//NANS//Project_PL//data//final_predictions.csv",index = False)
 
-
-
-
-   # prediction_data.to_csv('data/final_predictions.csv',index=False)
-
-
-
-
-
-
+# prediction_data.to_csv('data/final_predictions.csv',index=False)
 
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/

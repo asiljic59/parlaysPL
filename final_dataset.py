@@ -71,11 +71,16 @@ def get_goal_difference(team, curr_round, season):
         rounds_to_look = (21-ROUND,ROUND)
         scored, conceded = get_goals(team, season, rounds_to_look)
         return scored - conceded
-    if curr_round < 6:
+    elif curr_round < 6:
         last_season = pd.read_csv("./data/2022-23.csv")
         rounds_to_look = (38 - ROUND, 38 )
         scored, conceded = get_goals(team, last_season, rounds_to_look)
         return scored - conceded
+    else:
+        rounds_to_look = (curr_round-ROUND, ROUND)
+        scored, conceded = get_goals(team, season, rounds_to_look)
+        return scored - conceded
+
 
 '''
 for s in range(len(seasons)):

@@ -3,7 +3,7 @@ import pandas as pd
 
 final_pred = pd.read_csv("data/final_predictions.csv")
 def getMatch(team1,team2):
-    data = final_pred[(final_pred['Team1']== team1) & (final_pred['Team2']==team2)]
+    data = final_pred[(final_pred['HomeTeam']== team1) & (final_pred['AwayTeam']==team2)]
     print(f''
           '+----------------------------------------------------+\n'
          f'|    Home Team: {team1}  |  Away Team:{team2}         |\n'
@@ -13,4 +13,4 @@ def getTeam(team):
     pass
 
 if __name__ == '__main__':
-    getMatch('Man City','West Ham')
+    getMatch('Arsenal','Burnley')
